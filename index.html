@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>24 Volums: Projecte Rosselló-Pòrcel</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2pdf for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        parchment: '#fdfbf7',
+                        ink: '#2c2c2c',
+                        accent: '#8b3a3a',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fdfbf7; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .book-cover {
+            box-shadow: -3px 0 5px rgba(0,0,0,0.1) inset, 2px 2px 10px rgba(0,0,0,0.15);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .book-cover:hover {
+            transform: translateY(-5px);
+            box-shadow: -3px 0 5px rgba(0,0,0,0.1) inset, 4px 8px 15px rgba(0,0,0,0.2);
+        }
+        .status-unread { filter: grayscale(80%) opacity(0.8); }
+        .status-reading { border: 3px solid #eab308; }
+        .status-completed { border: 3px solid #22c55e; }
+
+        /* Print styles for PDF export */
+        #pdf-export-container { display: none; }
+    </style>
+</head>
+<body class="bg-parchment text-ink font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- LANDING PAGE -->
+    <div id="landing-view" class="flex-grow flex flex-col md:flex-row items-center justify-center p-6 md:p-12 gap-12 max-w-6xl mx-auto min-h-screen">
+        <div class="w-full md:w-1/2 flex justify-center">
+            <img src="Llista.png" alt="Llista manuscrita de Bartomeu Rosselló-Pòrcel" 
+                 class="max-w-full h-auto rounded shadow-2xl border-2 border-gray-100"
+                 onerror="this.onerror=null; this.src='https://placehold.co/600x850/fdfbf7/8b3a3a?text=Manuscrit+Original%5Cn(Desa+aqu%C3%AD+Llista.png)'">
+        </div>
+        <div class="w-full md:w-1/2 flex flex-col space-y-6">
+            <h1 class="font-serif text-5xl md:text-6xl text-accent font-bold">24 Volums</h1>
+            <h2 class="text-2xl text-gray-600 border-b pb-4">Projecte Rosselló-Pòrcel</h2>
+            <div class="prose text-lg text-gray-700 space-y-4">
+                <p>Aquest projecte pren com a inspiració directa la tasca d'estiu que el poeta i professor Bartomeu Rosselló-Pòrcel va deixar als seus alumnes de Batxillerat: <strong>llegir 24 volums durant l'estiu</strong>.</p>
+                <p>No es tractava només de llegir, sinó de fer-ho amb sentit crític. Aquesta aplicació recull aquell esperit històric i et convida a assumir el repte.</p>
+                <p>La llista original del mestre t'acompanyarà com a suggeriment, però tu tens la llibertat absoluta de substituir els llibres per crear la teva pròpia llista de 24 lectures essencials.</p>
+            </div>
+            <div class="pt-6">
+                <button onclick="startChallenge()" class="bg-ink hover:bg-accent text-white font-bold py-4 px-8 rounded-full text-xl transition duration-300 shadow-lg flex items-center gap-3">
+                    <i class="fas fa-book-open"></i> Començar el Repte
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DASHBOARD VIEW -->
+    <div id="dashboard-view" class="hidden flex-grow flex flex-col">
+        <!-- Header & Progress -->
+        <header class="bg-white shadow-sm sticky top-0 z-10">
+            <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <h1 class="font-serif text-2xl font-bold text-accent">24 Volums</h1>
+                    <span class="text-sm text-gray-500 hidden md:inline">| Projecte Rosselló-Pòrcel</span>
+                </div>
+                
+                <div class="w-full md:w-1/3 flex flex-col gap-1">
+                    <div class="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-wide">
+                        <span>Progrés de l'Estiu</span>
+                        <span id="progress-text">0 / 24 Assolits</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div id="progress-bar" class="bg-accent h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button onclick="exportToPDF()" class="bg-gray-100 hover:bg-gray-200 text-ink py-2 px-4 rounded text-sm font-semibold transition flex items-center gap-2">
+                        <i class="fas fa-file-pdf text-red-500"></i> Exportar Diari
+                    </button>
+                    <button onclick="showInfo()" class="bg-gray-100 hover:bg-gray-200 text-ink py-2 px-3 rounded text-sm font-semibold transition">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Books Grid -->
+        <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full">
+            <div id="books-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                <!-- Books will be injected here via JS -->
+            </div>
+        </main>
+    </div>
+
+    <!-- BOOK MODAL -->
+    <div id="book-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 overflow-y-auto pt-10 pb-10 flex justify-center items-start">
+        <div class="bg-white w-full max-w-3xl rounded-xl shadow-2xl relative mx-4 animate-fade-in-up">
+            <!-- Close Button -->
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-ink transition text-2xl z-10">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <div class="flex flex-col md:flex-row h-full">
+                <!-- Left Sidebar (Book Info) -->
+                <div class="md:w-1/3 bg-gray-50 p-6 border-r border-gray-200 rounded-l-xl flex flex-col items-center relative">
+                    <div class="absolute top-4 left-4 font-bold text-gray-300 text-4xl" id="modal-book-number">1</div>
+                    
+                    <div id="modal-cover-container" class="mt-8 mb-4 w-40 h-60">
+                        <!-- Cover injected here -->
+                    </div>
+                    
+                    <div class="text-center w-full mb-6">
+                        <h3 id="modal-title-display" class="font-serif font-bold text-xl text-ink leading-tight mb-1">Títol</h3>
+                        <p id="modal-author-display" class="text-gray-600 text-sm">Autor</p>
+                    </div>
+
+                    <button onclick="toggleEditMode()" class="w-full bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 py-2 px-4 rounded text-sm transition mb-2">
+                        <i class="fas fa-exchange-alt mr-1"></i> Canviar Llibre
+                    </button>
+                </div>
+
+                <!-- Right Content (Status & Notes) -->
+                <div class="md:w-2/3 p-6 md:p-8 flex flex-col h-full">
+                    
+                    <!-- EDIT FORM (Hidden by default) -->
+                    <div id="edit-form" class="hidden flex-col gap-4 mb-6 pb-6 border-b border-gray-200">
+                        <h4 class="font-bold text-accent"><i class="fas fa-edit"></i> Dades del llibre</h4>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Títol</label>
+                            <input type="text" id="edit-title" class="w-full border border-gray-300 p-2 rounded focus:ring-accent focus:border-accent outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">Autor</label>
+                            <input type="text" id="edit-author" class="w-full border border-gray-300 p-2 rounded focus:ring-accent focus:border-accent outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-1">URL de la Coberta (opcional)</label>
+                            <input type="text" id="edit-cover" placeholder="https://..." class="w-full border border-gray-300 p-2 rounded focus:ring-accent focus:border-accent outline-none text-sm">
+                        </div>
+                        <div class="flex justify-end gap-2 mt-2">
+                            <button onclick="toggleEditMode()" class="text-gray-500 hover:text-ink text-sm px-3 py-1">Cancel·lar</button>
+                            <button onclick="saveBookDetails()" class="bg-ink hover:bg-gray-800 text-white text-sm px-4 py-2 rounded">Desar Canvis</button>
+                        </div>
+                    </div>
+
+                    <!-- READING STATUS & NOTES -->
+                    <div id="reading-data" class="flex-grow flex flex-col">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 mb-1">Estat de lectura</label>
+                                <select id="book-status" onchange="updateStatus()" class="border border-gray-300 bg-white p-2 rounded font-semibold outline-none focus:ring-accent focus:border-accent">
+                                    <option value="unread">Pendent</option>
+                                    <option value="reading">📖 Llegint actualment</option>
+                                    <option value="completed">✅ Assolit</option>
+                                </select>
+                            </div>
+                            <div class="flex gap-4">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Data inici</label>
+                                    <input type="date" id="book-start-date" onchange="saveDates()" class="border border-gray-300 p-1.5 rounded text-sm outline-none text-gray-700">
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Data fi</label>
+                                    <input type="date" id="book-end-date" onchange="saveDates()" class="border border-gray-300 p-1.5 rounded text-sm outline-none text-gray-700">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex-grow flex flex-col">
+                            <label class="block text-sm font-bold text-ink mb-2 border-b border-gray-200 pb-2">La crítica <span class="text-gray-400 font-normal text-xs">(Anotacions, cites, valoració...)</span></label>
+                            <textarea id="book-notes" placeholder="Escriu aquí les teves reflexions sobre l'obra..." class="w-full flex-grow border border-gray-200 bg-gray-50 rounded-lg p-4 resize-none outline-none focus:ring-2 focus:ring-accent focus:bg-white transition" onblur="saveNotes()"></textarea>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden container for PDF export generation -->
+    <div id="pdf-export-container"></div>
+
+    <script>
+        // 1. DATA AND STATE
+        const defaultBooks = [
+            { id: 1, title: "Amok", author: "Stefan Zweig", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#2c3e50" },
+            { id: 2, title: "La Relíquia", author: "Eça de Queiroz", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#8e44ad" },
+            { id: 3, title: "La gent de Seldwyla", author: "Gottfried Keller", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#27ae60" },
+            { id: 4, title: "El ciment", author: "Fiódor Gladkov", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#c0392b" },
+            { id: 5, title: "Resurrecció (Vol. I)", author: "Lev Tolstoi", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#7f8c8d" },
+            { id: 6, title: "Resurrecció (Vol. II)", author: "Lev Tolstoi", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#7f8c8d" },
+            { id: 7, title: "El llibre de la Jungla", author: "Rudyard Kipling", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#16a085" },
+            { id: 8, title: "L'Atlàntida", author: "Pierre Benoit", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#2980b9" },
+            { id: 9, title: "Avatar", author: "Théophile Gautier", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#d35400" },
+            { id: 10, title: "Candide", author: "Voltaire", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#f39c12" },
+            { id: 11, title: "Graziella", author: "Alphonse de Lamartine", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#9b59b6" },
+            { id: 12, title: "El laberinto de las sirenas", author: "Pío Baroja", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#34495e" },
+            { id: 13, title: "A.M.D.G.", author: "Ramón Pérez de Ayala", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#1abc9c" },
+            { id: 14, title: "Las inquietudes de Shanti Andía", author: "Pío Baroja", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#34495e" },
+            { id: 15, title: "Doña Perfecta", author: "Benito Pérez Galdós", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#c0392b" },
+            { id: 16, title: "Pepita Jiménez", author: "Juan Valera", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#d35400" },
+            { id: 17, title: "Els tres al·lucinats", author: "Joan Puig i Ferreter", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#2c3e50" },
+            { id: 18, title: "La creació d'Eva", author: "Josep Carner", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#8e44ad" },
+            { id: 19, title: "Coses vistes", author: "Josep Pla", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#7f8c8d" },
+            { id: 20, title: "Camins de nit (Vol. I)", author: "Sebastià Juan Arbó", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#27ae60" },
+            { id: 21, title: "Camins de nit (Vol. II)", author: "Sebastià Juan Arbó", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#27ae60" },
+            { id: 22, title: "Història gris", author: "Miquel Llor", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#95a5a6" },
+            { id: 23, title: "La Barraca", author: "Vicente Blasco Ibáñez", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#e67e22" },
+            { id: 24, title: "Hamlet", author: "William Shakespeare", status: "unread", coverUrl: "", notes: "", startDate: "", endDate: "", color: "#000000" }
+        ];
+
+        let booksState = [];
+        let currentEditingId = null;
+
+        // Initialize App
+        function initApp() {
+            const savedState = localStorage.getItem('rp_24volums_state');
+            const hasStarted = localStorage.getItem('rp_24volums_started');
+
+            if (savedState) {
+                booksState = JSON.parse(savedState);
+            } else {
+                booksState = JSON.parse(JSON.stringify(defaultBooks));
+            }
+
+            if (hasStarted === 'true') {
+                document.getElementById('landing-view').classList.add('hidden');
+                document.getElementById('dashboard-view').classList.remove('hidden');
+                renderGrid();
+                updateProgress();
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem('rp_24volums_state', JSON.stringify(booksState));
+            updateProgress();
+        }
+
+        // View Navigation
+        function startChallenge() {
+            localStorage.setItem('rp_24volums_started', 'true');
+            document.getElementById('landing-view').classList.add('hidden');
+            document.getElementById('dashboard-view').classList.remove('hidden');
+            renderGrid();
+            updateProgress();
+        }
+
+        function showInfo() {
+            document.getElementById('dashboard-view').classList.add('hidden');
+            document.getElementById('landing-view').classList.remove('hidden');
+        }
+
+        // Render Functions
+        function renderGrid() {
+            const grid = document.getElementById('books-grid');
+            grid.innerHTML = '';
+
+            booksState.forEach(book => {
+                const card = document.createElement('div');
+                card.className = 'flex flex-col items-center cursor-pointer group';
+                card.onclick = () => openModal(book.id);
+
+                let statusClass = 'status-unread';
+                let badgeHTML = '';
+                
+                if (book.status === 'reading') {
+                    statusClass = 'status-reading';
+                    badgeHTML = '<div class="absolute -top-3 -right-3 bg-yellow-400 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg border-2 border-white z-10" title="Llegint"><i class="fas fa-book-open text-xs"></i></div>';
+                } else if (book.status === 'completed') {
+                    statusClass = 'status-completed opacity-100';
+                    badgeHTML = '<div class="absolute -top-3 -right-3 bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg border-2 border-white z-10" title="Assolit"><i class="fas fa-check text-xs"></i></div>';
+                }
+
+                // Generate generic cover or use URL
+                let coverHTML = '';
+                if (book.coverUrl) {
+                    coverHTML = `<img src="${book.coverUrl}" alt="${book.title}" class="w-full h-full object-cover rounded-r-md rounded-l-sm" onerror="this.src='https://placehold.co/200x300/e2e8f0/1e293b?text=Sense+Coberta'">`;
+                } else {
+                    coverHTML = `
+                        <div class="w-full h-full rounded-r-md rounded-l-sm flex flex-col justify-between p-3 relative text-white" style="background-color: ${book.color || '#34495e'}">
+                            <div class="absolute left-0 top-0 bottom-0 w-2 bg-black bg-opacity-20 border-r border-black border-opacity-10"></div>
+                            <div class="text-right mt-2 text-[0.6rem] opacity-70 uppercase tracking-widest">Vol. ${book.id}</div>
+                            <div class="pl-2">
+                                <h4 class="font-serif font-bold text-sm leading-tight mb-1" style="word-wrap: break-word;">${book.title}</h4>
+                                <p class="text-xs opacity-90">${book.author}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="relative w-32 sm:w-36 md:w-40 h-48 sm:h-56 md:h-60 mb-3">
+                        ${badgeHTML}
+                        <div class="book-cover w-full h-full ${statusClass} rounded-r-md rounded-l-sm overflow-hidden bg-gray-200">
+                            ${coverHTML}
+                        </div>
+                    </div>
+                    <div class="text-center px-1">
+                        <h3 class="font-bold text-sm text-ink truncate w-32 sm:w-36 md:w-40" title="${book.title}">${book.title}</h3>
+                        <p class="text-xs text-gray-500 truncate w-32 sm:w-36 md:w-40" title="${book.author}">${book.author}</p>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function updateProgress() {
+            const completedCount = booksState.filter(b => b.status === 'completed').length;
+            const percentage = (completedCount / 24) * 100;
+            
+            document.getElementById('progress-bar').style.width = `${percentage}%`;
+            document.getElementById('progress-text').innerText = `${completedCount} / 24 Assolits`;
+        }
+
+        // Modal Functions
+        function openModal(id) {
+            currentEditingId = id;
+            const book = booksState.find(b => b.id === id);
+            
+            // Populate Display Info
+            document.getElementById('modal-book-number').innerText = id;
+            document.getElementById('modal-title-display').innerText = book.title;
+            document.getElementById('modal-author-display').innerText = book.author;
+            
+            // Generate Cover for Modal
+            const coverContainer = document.getElementById('modal-cover-container');
+            if (book.coverUrl) {
+                coverContainer.innerHTML = `<img src="${book.coverUrl}" class="w-full h-full object-cover rounded book-cover shadow-lg" onerror="this.src='https://placehold.co/200x300/e2e8f0/1e293b?text=Sense+Coberta'">`;
+            } else {
+                coverContainer.innerHTML = `
+                    <div class="w-full h-full rounded flex flex-col justify-between p-4 relative text-white book-cover shadow-lg" style="background-color: ${book.color || '#34495e'}">
+                        <div class="absolute left-0 top-0 bottom-0 w-3 bg-black bg-opacity-20 border-r border-black border-opacity-10"></div>
+                        <div class="text-right mt-2 text-xs opacity-70 uppercase tracking-widest">Vol. ${book.id}</div>
+                        <div class="pl-3">
+                            <h4 class="font-serif font-bold text-xl leading-tight mb-2">${book.title}</h4>
+                            <p class="text-sm opacity-90">${book.author}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Populate Form Fields
+            document.getElementById('edit-title').value = book.title;
+            document.getElementById('edit-author').value = book.author;
+            document.getElementById('edit-cover').value = book.coverUrl;
+            document.getElementById('book-status').value = book.status;
+            document.getElementById('book-start-date').value = book.startDate;
+            document.getElementById('book-end-date').value = book.endDate;
+            document.getElementById('book-notes').value = book.notes;
+
+            // Ensure correct view state
+            document.getElementById('edit-form').classList.add('hidden');
+            
+            document.getElementById('book-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('book-modal').classList.add('hidden');
+            currentEditingId = null;
+        }
+
+        function toggleEditMode() {
+            const form = document.getElementById('edit-form');
+            if (form.classList.contains('hidden')) {
+                form.classList.remove('hidden');
+            } else {
+                form.classList.add('hidden');
+            }
+        }
+
+        // Data Saving Functions
+        function saveBookDetails() {
+            const book = booksState.find(b => b.id === currentEditingId);
+            book.title = document.getElementById('edit-title').value || 'Sense Títol';
+            book.author = document.getElementById('edit-author').value || 'Desconegut';
+            book.coverUrl = document.getElementById('edit-cover').value;
+            
+            // Random color for new covers
+            if (!book.color) {
+                const colors = ["#2c3e50", "#8e44ad", "#27ae60", "#c0392b", "#d35400", "#16a085", "#2980b9"];
+                book.color = colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            saveState();
+            renderGrid();
+            openModal(currentEditingId); // Refresh modal
+        }
+
+        function updateStatus() {
+            const book = booksState.find(b => b.id === currentEditingId);
+            book.status = document.getElementById('book-status').value;
+            saveState();
+            renderGrid(); // update grid badges behind modal
+        }
+
+        function saveDates() {
+            const book = booksState.find(b => b.id === currentEditingId);
+            book.startDate = document.getElementById('book-start-date').value;
+            book.endDate = document.getElementById('book-end-date').value;
+            saveState();
+        }
+
+        function saveNotes() {
+            const book = booksState.find(b => b.id === currentEditingId);
+            book.notes = document.getElementById('book-notes').value;
+            saveState();
+        }
+
+        function exportToPDF() {
+            // 1. Build the HTML structure for the PDF
+            const container = document.getElementById('pdf-export-container');
+            container.innerHTML = '';
+            
+            const printContent = document.createElement('div');
+            printContent.style.padding = '40px';
+            printContent.style.fontFamily = 'Inter, sans-serif';
+            printContent.style.color = '#2c2c2c';
+
+            // Title
+            printContent.innerHTML = `
+                <div style="text-align:center; margin-bottom: 40px;">
+                    <h1 style="font-family: 'Playfair Display', serif; color: #8b3a3a; font-size: 32px; margin-bottom: 5px;">24 Volums</h1>
+                    <h2 style="font-size: 18px; color: #666; border-bottom: 1px solid #ccc; padding-bottom: 10px; display: inline-block;">Projecte Rosselló-Pòrcel - Diari de Lectura</h2>
+                </div>
+            `;
+
+            // Filter read/reading books, or just show all if desired. Let's show all that have data.
+            const booksWithData = booksState.filter(b => b.status !== 'unread' || b.notes.trim() !== '');
+
+            if (booksWithData.length === 0) {
+                alert("Encara no has guardat dades ni notes de cap llibre per exportar.");
+                return;
+            }
+
+            booksWithData.forEach(book => {
+                let statusText = book.status === 'completed' ? 'Assolit' : (book.status === 'reading' ? 'Llegint' : 'Pendent');
+                
+                printContent.innerHTML += `
+                    <div style="margin-bottom: 30px; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; background-color: #fdfbf7;">
+                        <h3 style="font-family: 'Playfair Display', serif; font-size: 20px; margin: 0 0 5px 0;">${book.id}. ${book.title}</h3>
+                        <p style="margin: 0 0 15px 0; color: #555; font-size: 14px;"><strong>Autor:</strong> ${book.author}</p>
+                        
+                        <div style="display: flex; gap: 20px; margin-bottom: 15px; font-size: 12px; color: #666;">
+                            <span><strong>Estat:</strong> ${statusText}</span>
+                            <span><strong>Inici:</strong> ${book.startDate || '-'}</span>
+                            <span><strong>Fi:</strong> ${book.endDate || '-'}</span>
+                        </div>
+                        
+                        <div>
+                            <strong style="font-size: 14px;">La crítica:</strong>
+                            <p style="white-space: pre-wrap; font-size: 13px; line-height: 1.6; margin-top: 5px; color: #333;">${book.notes ? book.notes : '<em>Sense anotacions.</em>'}</p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.appendChild(printContent);
+
+            // 2. Configure html2pdf
+            const opt = {
+                margin:       10,
+                filename:     '24_Volums_Diari_Lectura.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // 3. Generate PDF
+            const exportButton = document.querySelector('button[onclick="exportToPDF()"]');
+            const originalText = exportButton.innerHTML;
+            exportButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generant...';
+            exportButton.disabled = true;
+
+            html2pdf().set(opt).from(container).save().then(() => {
+                container.innerHTML = ''; // Clean up
+                exportButton.innerHTML = originalText;
+                exportButton.disabled = false;
+            }).catch(err => {
+                console.error("Error generant PDF: ", err);
+                alert("Hi ha hagut un error en generar el document.");
+                exportButton.innerHTML = originalText;
+                exportButton.disabled = false;
+            });
+        }
+
+        // Initialize on load
+        window.onload = initApp;
+
+    </script>
+</body>
+</html>
