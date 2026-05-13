@@ -237,7 +237,6 @@
         let booksState = [];
         let currentEditingId = null;
 
-        // Initialize App
         function initApp() {
             const savedState = localStorage.getItem('rp_24volums_state');
             const hasStarted = localStorage.getItem('rp_24volums_started');
@@ -248,12 +247,19 @@
                 booksState = JSON.parse(JSON.stringify(defaultBooks));
             }
 
-            if (hasStarted === 'true') {
-                document.getElementById('landing-view').classList.add('hidden');
-                document.getElementById('dashboard-view').classList.remove('hidden');
-                renderGrid();
-                updateProgress();
-            }
+            // Afegeixo un petit retard perquè la portada es vegi abans de saltar, si l'usuari vol.
+            // O, podem fer que SEMPRE es mostri la portada i s'hagi de clicar "Començar el Repte".
+            // Anem a fer que SEMPRE es mostri la portada en carregar la pàgina, com un llibre.
+            // if (hasStarted === 'true') {
+            //     document.getElementById('landing-view').classList.add('hidden');
+            //     document.getElementById('dashboard-view').classList.remove('hidden');
+            //     renderGrid();
+            //     updateProgress();
+            // }
+            
+            // Renderitzem per si de cas, però mantenim la vista a 'landing-view'
+            renderGrid();
+            updateProgress();
         }
 
         function saveState() {
